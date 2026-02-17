@@ -2,65 +2,70 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Gerador de Comprovante - Document</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Comprovante</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root { --itau-orange: #ec7000; --text-gray: #5e5e5e; }
-        body { font-family: 'Arial', sans-serif; background-color: #f0f0f0; margin: 0; display: flex; }
+        body { font-family: 'Arial', sans-serif; background-color: #f0f0f0; margin: 0; padding: 0; }
         
-        .admin-panel { width: 350px; background: #2c3e50; color: white; padding: 20px; height: 100vh; overflow-y: auto; position: fixed; box-sizing: border-box; }
-        .admin-panel h2 { font-size: 18px; border-bottom: 1px solid #555; padding-bottom: 10px; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; font-size: 11px; color: #ccc; margin-bottom: 5px; text-transform: uppercase; }
-        input { width: 100%; padding: 10px; border-radius: 4px; border: none; box-sizing: border-box; background: #34495e; color: white; }
-        button { width: 100%; background: var(--itau-orange); color: white; border: none; padding: 15px; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 20px; font-size: 16px; }
+        /* Painel Ajustado para Mobile */
+        .admin-panel { padding: 15px; background: #2c3e50; color: white; box-sizing: border-box; }
+        .form-group { margin-bottom: 10px; }
+        label { display: block; font-size: 10px; color: #ccc; text-transform: uppercase; }
+        input { width: 100%; padding: 8px; border-radius: 4px; border: none; background: #34495e; color: white; font-size: 14px; }
         
-        .preview-area { margin-left: 350px; flex-grow: 1; padding: 40px; display: flex; justify-content: center; }
-        .page { background: white; width: 210mm; min-height: 297mm; padding: 50px; box-sizing: border-box; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        /* Botão Fixo no topo ou base para facilitar no celular */
+        .btn-container { padding: 10px; background: #2c3e50; position: sticky; top: 0; z-index: 100; }
+        button { width: 100%; background: var(--itau-orange); color: white; border: none; padding: 12px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 16px; }
+        
+        /* Área do PDF - Ajustada para não quebrar página */
+        .preview-area { background: #f0f0f0; padding: 10px; display: flex; justify-content: center; }
+        #comprovante { 
+            background: white; 
+            width: 210mm; 
+            min-height: 290mm; /* Ligeiramente menor que A4 padrão para evitar quebra */
+            padding: 40px; 
+            box-sizing: border-box; 
+            position: relative;
+        }
         
         .logo { color: var(--itau-orange); font-size: 32px; font-weight: bold; margin-bottom: 10px; }
-        .header-title { font-size: 20px; font-weight: bold; margin-bottom: 5px; }
-        .header-date { font-size: 15px; color: var(--text-gray); margin-bottom: 30px; }
-        .section-title { font-weight: bold; font-size: 14px; margin-top: 25px; margin-bottom: 10px; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
-        .info-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
-        .info-table td { padding: 6px 0; font-size: 13px; vertical-align: top; }
-        .label-cell { color: var(--text-gray); width: 45%; }
-        .value-cell { font-weight: bold; width: 55%; text-align: left; white-space: pre-wrap; }
+        .header-title { font-size: 18px; font-weight: bold; margin-bottom: 5px; }
+        .header-date { font-size: 14px; color: var(--text-gray); margin-bottom: 25px; }
+        .section-title { font-weight: bold; font-size: 13px; margin-top: 20px; margin-bottom: 8px; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
+        .info-table { width: 100%; border-collapse: collapse; }
+        .info-table td { padding: 5px 0; font-size: 12px; vertical-align: top; }
+        .label-cell { color: var(--text-gray); width: 40%; }
+        .value-cell { font-weight: bold; width: 60%; text-align: left; word-break: break-all; }
+
+        /* Esconder painel na hora da captura se necessário, 
+           mas o html2pdf já foca apenas no ID indicado */
     </style>
 </head>
 <body>
 
+    <div class="btn-container">
+        <button onclick="gerarPDF()">BAIXAR DOCUMENTO</button>
+    </div>
+
     <div class="admin-panel">
-        <h2>Edição do Documento</h2>
-        <div class="form-group">
-            <label>Código de Barras</label>
-            <input type="text" id="in_cb" value="37690001040010567100200089794861613610000034000" oninput="update()">
-        </div>
-        <div class="form-group">
-            <label>Instituição Emissora</label>
-            <input type="text" id="in_banco" value="376 BCO J.P. MORGAN S.A." oninput="update()">
-        </div>
-        <div class="form-group">
-            <label>Beneficiário</label>
-            <input type="text" id="in_ben" value="MERCADO PAGO INSTITUICAO DE PAGAMENTO LT" oninput="update()">
-        </div>
         <div class="form-group">
             <label>Beneficiário Final</label>
             <input type="text" id="in_final" value="Luana Gomes Rodrigues Toledo" oninput="update()">
         </div>
         <div class="form-group">
-            <label>Data Vencimento</label>
-            <input type="text" id="in_venc" value="18/02/2026" oninput="update()">
-        </div>
-        <div class="form-group">
             <label>Valor (R$)</label>
             <input type="text" id="in_valor" value="340,00" oninput="update()">
         </div>
-        <button onclick="gerarPDF()">BAIXAR DOCUMENTO</button>
-    </div>
+        <div class="form-group">
+            <label>Código de Barras</label>
+            <input type="text" id="in_cb" value="37690001040010567100200089794861613610000034000" oninput="update()">
+        </div>
+        </div>
 
     <div class="preview-area">
-        <div id="comprovante" class="page">
+        <div id="comprovante">
             <div class="logo">itaú</div>
             <div class="header-title">comprovante de pagamento outros bancos</div>
             <div id="data-topo" class="header-date"></div>
@@ -75,12 +80,11 @@
             <div class="section-title">Dados do pagamento:</div>
             <table class="info-table">
                 <tr><td class="label-cell">Código de barras:</td><td class="value-cell" id="out_cb"></td></tr>
-                <tr><td class="label-cell">Instituição Emissora:</td><td class="value-cell" id="out_banco"></td></tr>
-                <tr><td class="label-cell">Nome do beneficiário:</td><td class="value-cell" id="out_ben"></td></tr>
+                <tr><td class="label-cell">Instituição Emissora:</td><td class="value-cell">376 BCO J.P. MORGAN S.A.</td></tr>
+                <tr><td class="label-cell">Nome do beneficiário:</td><td class="value-cell">MERCADO PAGO INSTITUICAO DE PAGAMENTO LT</td></tr>
                 <tr><td class="label-cell">Nome do beneficiário final:</td><td class="value-cell" id="out_final"></td></tr>
-                <tr><td class="label-cell">Data de vencimento:</td><td class="value-cell" id="out_venc"></td></tr>
-                <tr><td class="label-cell">Valor do documento:</td><td class="value-cell" id="out_valor"></td></tr>
-                <tr><td class="label-cell">Valor pago:</td><td class="value-cell" id="out_valor2"></td></tr>
+                <tr><td class="label-cell">Data de vencimento:</td><td class="value-cell">18/02/2026</td></tr>
+                <tr><td class="label-cell">Valor pago:</td><td class="value-cell" id="out_valor"></td></tr>
                 <tr><td class="label-cell">Pagamento efetuado em:</td><td class="value-cell" id="data-hora-pagamento"></td></tr>
             </table>
 
@@ -94,12 +98,8 @@
     <script>
         function update() {
             document.getElementById('out_cb').innerText = document.getElementById('in_cb').value;
-            document.getElementById('out_banco').innerText = document.getElementById('in_banco').value;
-            document.getElementById('out_ben').innerText = document.getElementById('in_ben').value;
             document.getElementById('out_final').innerText = document.getElementById('in_final').value;
-            document.getElementById('out_venc').innerText = document.getElementById('in_venc').value;
             document.getElementById('out_valor').innerText = "R$ " + document.getElementById('in_valor').value;
-            document.getElementById('out_valor2').innerText = "R$ " + document.getElementById('in_valor').value;
             
             const agora = new Date();
             const meses = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
@@ -114,8 +114,14 @@
             const opt = {
                 margin: 0,
                 filename: 'Document.pdf',
-                html2canvas: { scale: 3 },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                image: { type: 'jpeg', quality: 1 },
+                html2canvas: { 
+                    scale: 2, 
+                    useCORS: true, 
+                    letterRendering: true 
+                },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak: { mode: 'avoid-all' } // Evita quebras de página automáticas
             };
             html2pdf().set(opt).from(element).save();
         }
